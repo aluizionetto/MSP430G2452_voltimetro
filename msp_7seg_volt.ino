@@ -10,18 +10,19 @@
    -------
   F|     | D
    |  E  |
-   ------
+   ------     . (ponto)
 */
 int valor = 0;
+float valor_f1  = 0, valor_f2 = 0;
 
-void ini_display()
+void ini_display()  
 {
   //digits
   P1DIR |= BIT0 + BIT1 + BIT2 + BIT3;
   //        b      F 
   P1DIR |= BIT4 + BIT5;
-  //        E      A      D      C      G
-  P2DIR |= BIT0 + BIT1 + BIT2 + BIT3 + BIT4;
+  //        E      A      D      C      G    (ponto)
+  P2DIR |= BIT0 + BIT1 + BIT2 + BIT3 + BIT4 + BIT5;
 }
 void set_display(int v)
 {
@@ -87,6 +88,8 @@ void set_display(int v)
       //        E      A      D      C      G
       P2OUT |= BIT0 + BIT1 + BIT2 + BIT3 + BIT4;
       break;
+    default:
+      break; 
   }
 }
 
@@ -107,10 +110,19 @@ void set_digit(int k)
     case 3:
       P1OUT ^= BIT3;
       break;
+    default:
+      break;
+      
   }
 }
 
-void sweep_display(int v)
+void set_point(bool point)
+{
+  if (point)  P2OUT |= BIT5;
+  else  P2OUT &= ~BIT5;
+}
+
+void sweep_display(int v, int ponto)
 {
   static int digit;
   int d;
@@ -129,8 +141,16 @@ void sweep_display(int v)
       d = v / 1000;
       break;
   }
+
+  set_point(false);
+  set_digit(0xff);
+  
   set_display(d % 10);
   set_digit(digit);
+  
+  if (ponto == digit)
+    set_point(true);
+    
   if (++digit > 3) digit = 0;
 }
 
@@ -168,7 +188,7 @@ void Timer_A0 (void)
   static int msCount=0;// Count milliseconds to allow a 1 second pulse
 
   //varredura do display
-  sweep_display(valor);
+  sweep_display(valor,3);
   
   msCount++;
   if (msCount >= 100)
@@ -176,6 +196,8 @@ void Timer_A0 (void)
     P1OUT ^= BIT6;  //led de indicacao
     msCount = 0;
     valor = analogRead(A7);
-    valor = (int)( (float)valor*2500/1023);
+    valor_f1 = (float)valor*2500/1023;
+    valor = (int)( valor_f1*0.0004 + valor_f2*0.9996);
+    valor_f2 = valor_f1;
   }
 }
